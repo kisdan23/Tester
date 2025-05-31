@@ -1,15 +1,54 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Test Page</title>
+  <title>Strategy Tester</title>
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; margin-top: 100px; }
-    button { padding: 10px 20px; font-size: 16px; }
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+    input, button, textarea { margin: 10px 0; width: 100%; padding: 10px; }
+    #result { margin-top: 20px; background: #f0f0f0; padding: 10px; }
   </style>
 </head>
 <body>
-  <h1>Hello from GitHub Pages!</h1>
-  <p>Click the button below to test interaction:</p>
-  <button onclick="alert('You clicked the button!')">Click Me</button>
+
+  <h1>Simple Strategy Tester</h1>
+
+  <label for="candleData">Paste OHLC Data (CSV format):</label>
+  <textarea id="candleData" rows="6" placeholder="Example:
+2024-05-01,1.1000,1.1050,1.0950,1.1020
+2024-05-02,1.1020,1.1080,1.0980,1.1070"></textarea>
+
+  <button onclick="runTest()">Run Strategy</button>
+
+  <div id="result"></div>
+
+  <script>
+    function runTest() {
+      const raw = document.getElementById('candleData').value.trim();
+      const lines = raw.split('\n');
+      let output = "<h3>Trade Results:</h3>";
+
+      lines.forEach((line, i) => {
+        const [date, open, high, low, close] = line.split(',');
+        const o = parseFloat(open);
+        const c = parseFloat(close);
+        let result = '';
+
+        if (c > o) {
+          const profit = (c - o).toFixed(4);
+          result = `BUY on ${date}: Profit = ${profit}`;
+        } else if (c < o) {
+          const profit = (o - c).toFixed(4);
+          result = `SELL on ${date}: Profit = ${profit}`;
+        } else {
+          result = `NO TRADE on ${date}`;
+        }
+
+        output += `<p>${result}</p>`;
+      });
+
+      document.getElementById('result').innerHTML = output;
+    }
+  </script>
+
 </body>
 </html>
