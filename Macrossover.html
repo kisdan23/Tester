@@ -1,0 +1,143 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MA Crossover Strategy Tester</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    canvas { max-width: 100%; height: 400px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+    th { background-color: #f2f2f2; }
+    input { margin-right: 10px; }
+  </style>
+</head>
+<body>
+  <h1>MA Crossover Strategy Tester</h1><label>Fast MA Period: <input type="number" id="fastMA" value="5"></label> <label>Slow MA Period: <input type="number" id="slowMA" value="15"></label> <label>TP (in %): <input type="number" id="tp" value="2"></label> <label>SL (in %): <input type="number" id="sl" value="1"></label> <input type="file" id="fileInput"> <button onclick="runStrategy()">Run Strategy</button>
+
+<canvas id="chart"></canvas> <canvas id="equityChart"></canvas>
+
+  <table id="tradeLog"></table>  <script>
+    let priceData = [];
+    let labels = [];
+
+    function readCSV(file, callback) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const lines = e.target.result.split('\n').slice(1);
+        const result = lines.map(line => {
+          const [time, open, high, low, close] = line.split(',');
+          return {
+            time,
+            close: parseFloat(close)
+          };
+        });
+        callback(result);
+      };
+      reader.readAsText(file);
+    }
+
+    function calculateMA(data, period) {
+      return data.map((_, i) => {
+        if (i < period - 1) return null;
+        const sum = data.slice(i - period + 1, i + 1).reduce((acc, d) => acc + d.close, 0);
+        return sum / period;
+      });
+    }
+
+    function runStrategy() {
+      const fastPeriod = parseInt(document.getElementById('fastMA').value);
+      const slowPeriod = parseInt(document.getElementById('slowMA').value);
+      const tpPercent = parseFloat(document.getElementById('tp').value);
+      const slPercent = parseFloat(document.getElementById('sl').value);
+      const file = document.getElementById('fileInput').files[0];
+
+      if (!file) return alert("Upload a CSV file first");
+
+      readCSV(file, data => {
+        priceData = data;
+        labels = data.map(d => d.time);
+
+        const fastMA = calculateMA(data, fastPeriod);
+        const slowMA = calculateMA(data, slowPeriod);
+
+        let trades = [], inTrade = false, entry = 0, entryIndex = 0;
+        let equity = 100, equityHistory = [];
+
+        for (let i = 1; i < data.length; i++) {
+          if (fastMA[i - 1] == null || slowMA[i - 1] == null) continue;
+
+          if (!inTrade && fastMA[i - 1] < slowMA[i - 1] && fastMA[i] > slowMA[i]) {
+            // Buy signal
+            entry = data[i].close;
+            entryIndex = i;
+            trades.push({ type: 'Buy', time: data[i].time, entry });
+            inTrade = true;
+          }
+
+          if (inTrade) {
+            const move = (data[i].close - entry) / entry * 100;
+            if (move >= tpPercent || move <= -slPercent) {
+              const result = move >= tpPercent ? 'TP' : 'SL';
+              const exit = data[i].close;
+              const pnl = ((exit - entry) / entry) * 100;
+              equity *= (1 + pnl / 100);
+              trades[trades.length - 1].exit = exit;
+              trades[trades.length - 1].result = result;
+              trades[trades.length - 1].pnl = pnl.toFixed(2);
+              trades[trades.length - 1].exitTime = data[i].time;
+              equityHistory.push({ time: data[i].time, equity });
+              inTrade = false;
+            }
+          }
+        }
+
+        renderChart(data, trades);
+        renderEquityChart(equityHistory);
+        renderLog(trades);
+      });
+    }
+
+    function renderChart(data, trades) {
+      const ctx = document.getElementById('chart').getContext('2d');
+      const price = data.map(d => d.close);
+      const buyMarkers = trades.map(t => t.type === 'Buy' ? {x: t.time, y: t.entry} : null).filter(Boolean);
+
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Close Price', data: price, borderColor: 'black', pointRadius: 0 },
+            { label: 'Buy', data: buyMarkers, backgroundColor: 'green', pointStyle: 'triangle', showLine: false }
+          ]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'top' } } }
+      });
+    }
+
+    function renderEquityChart(equityHistory) {
+      const ctx = document.getElementById('equityChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: equityHistory.map(e => e.time),
+          datasets: [{ label: 'Equity', data: equityHistory.map(e => e.equity), borderColor: 'blue', fill: false }]
+        },
+        options: { responsive: true }
+      });
+    }
+
+    function renderLog(trades) {
+      const table = document.getElementById('tradeLog');
+      table.innerHTML = `<tr><th>Type</th><th>Entry Time</th><th>Entry</th><th>Exit</th><th>Exit Time</th><th>Result</th><th>PnL (%)</th></tr>`;
+      trades.forEach(t => {
+        table.innerHTML += `<tr>
+          <td>${t.type}</td><td>${t.time}</td><td>${t.entry}</td>
+          <td>${t.exit || ''}</td><td>${t.exitTime || ''}</td>
+          <td>${t.result || ''}</td><td>${t.pnl || ''}</td>
+        </tr>`;
+      });
+    }
+  </script></body>
+</html>
