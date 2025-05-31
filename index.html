@@ -1,70 +1,15 @@
-<!DOCTYPE html><html>
+<!DOCTYPE html>
+<html>
 <head>
-  <title>Web Strategy Tester</title>
+  <title>Test Page</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f0f2f5;
-      padding: 20px;
-    }
-    #chart {
-      width: 100%;
-      height: 400px;
-      margin-bottom: 20px;
-    }
-    #log {
-      background: #fff;
-      padding: 10px;
-      border: 1px solid #ccc;
-      height: 200px;
-      overflow-y: auto;
-    }
+    body { font-family: Arial, sans-serif; text-align: center; margin-top: 100px; }
+    button { padding: 10px 20px; font-size: 16px; }
   </style>
 </head>
 <body>
-  <h2>Strategy Tester</h2>
-  <div id="chart"></div>
-  <button onclick="runStrategy()">Run Strategy</button>
-  <h3>Trade Log</h3>
-  <div id="log"></div>  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>  <script>
-    const chart = LightweightCharts.createChart(document.getElementById("chart"), {
-      width: window.innerWidth - 40,
-      height: 400,
-    });
-    const candleSeries = chart.addCandlestickSeries();
-
-    const candles = [
-      { time: 1, open: 100, high: 110, low: 90, close: 105 },
-      { time: 2, open: 105, high: 115, low: 100, close: 110 },
-      { time: 3, open: 110, high: 120, low: 108, close: 115 },
-      { time: 4, open: 115, high: 117, low: 107, close: 110 },
-      { time: 5, open: 110, high: 112, low: 100, close: 105 },
-    ];
-
-    candleSeries.setData(candles);
-
-    function log(msg) {
-      const logDiv = document.getElementById("log");
-      logDiv.innerHTML += `<div>${msg}</div>`;
-      logDiv.scrollTop = logDiv.scrollHeight;
-    }
-
-    function runStrategy() {
-      let balance = 1000;
-      let position = null;
-
-      candles.forEach((bar, i) => {
-        if (!position && bar.close > bar.open + 5) {
-          position = { entry: bar.close };
-          log(`Buy at ${bar.close}`);
-        } else if (position && bar.close < position.entry - 5) {
-          log(`Close at ${bar.close}, PnL: ${bar.close - position.entry}`);
-          balance += bar.close - position.entry;
-          position = null;
-        }
-      });
-
-      log(`Final balance: ${balance}`);
-    }
-  </script></body>
+  <h1>Hello from GitHub Pages!</h1>
+  <p>Click the button below to test interaction:</p>
+  <button onclick="alert('You clicked the button!')">Click Me</button>
+</body>
 </html>
