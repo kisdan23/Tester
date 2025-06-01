@@ -1,140 +1,161 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MA Crossover Strategy Tester</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
-    h1 { color: #333; }
-    input, button { margin: 5px; padding: 10px; font-size: 1em; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-    #results { background: #fff; padding: 20px; border-radius: 10px; }
+    body { font-family: Arial; padding: 20px; }
+    input, button { margin: 5px; }
+    table, th, td { border: 1px solid black; border-collapse: collapse; padding: 5px; }
   </style>
 </head>
 <body>
-  <h1>MA Crossover Strategy Tester</h1>
-  <input type="file" id="csvFile" accept=".csv" />
-  <br />
-  Fast MA Period: <input type="number" id="fastMA" value="5" />
-  Slow MA Period: <input type="number" id="slowMA" value="10" />
-  Take Profit (in points): <input type="number" id="tp" value="50" />
-  Stop Loss (in points): <input type="number" id="sl" value="30" />
-  Initial Capital: <input type="number" id="capital" value="10000" />
-  Lot Size: <input type="number" id="lotSize" value="0.1" step="0.01" />
-  <button onclick="runStrategy()">Run Strategy</button>  <div id="results"></div>  <script>
-    function parseCSV(text) {
-      const rows = text.trim().split('\n');
-      const headers = rows.shift().split(',');
-      return rows.map(row => {
-        const values = row.split(',');
-        return Object.fromEntries(values.map((v, i) => [headers[i], parseFloat(v)]));
-      });
-    }
+  <h2>Moving Average Crossover Backtester</h2>
 
-    function calcMA(data, period, key) {
-      return data.map((_, i) => {
-        if (i < period - 1) return null;
-        const slice = data.slice(i - period + 1, i + 1);
-        const sum = slice.reduce((acc, d) => acc + d[key], 0);
-        return sum / period;
-      });
+  <label for="csvFile">Upload CSV (OHLCV):</label>
+  <input type="file" id="csvFile" accept=".csv"><br>
+
+  <label for="lotSize">Lot Size:</label>
+  <input type="number" id="lotSize" value="0.1" step="0.01"><br>
+
+  <label for="initialCapital">Initial Capital:</label>
+  <input type="number" id="initialCapital" value="1000"><br>
+
+  <label for="tp">Take Profit (pips):</label>
+  <input type="number" id="tp" value="50"><br>
+
+  <label for="sl">Stop Loss (pips):</label>
+  <input type="number" id="sl" value="30"><br>
+
+  <button onclick="runStrategy()">Run Strategy</button>
+
+  <h3>Trade Log</h3>
+  <table id="tradeLog">
+    <thead>
+      <tr>
+        <th>Index</th>
+        <th>Signal</th>
+        <th>Entry</th>
+        <th>Exit</th>
+        <th>Pips</th>
+        <th>Profit</th>
+        <th>Capital</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    let csvData = [];
+
+    document.getElementById('csvFile').addEventListener('change', function (e) {
+      const reader = new FileReader();
+      reader.onload = function () {
+        const lines = reader.result.split('\n').slice(1);
+        csvData = lines.map(line => {
+          const [time, open, high, low, close] = line.split(',');
+          return {
+            time,
+            open: parseFloat(open),
+            high: parseFloat(high),
+            low: parseFloat(low),
+            close: parseFloat(close)
+          };
+        }).filter(row => !isNaN(row.close));
+        alert("CSV loaded with " + csvData.length + " rows.");
+      };
+      reader.readAsText(e.target.files[0]);
+    });
+
+    function SMA(data, index, period) {
+      if (index < period - 1) return null;
+      let sum = 0;
+      for (let i = 0; i < period; i++) {
+        sum += data[index - i].close;
+      }
+      return sum / period;
     }
 
     function runStrategy() {
-      const file = document.getElementById('csvFile').files[0];
-      if (!file) return alert("Please upload a CSV file.");
+      const tp = parseFloat(document.getElementById('tp').value);
+      const sl = parseFloat(document.getElementById('sl').value);
+      const lotSize = parseFloat(document.getElementById('lotSize').value) || 0.1;
+      let capital = parseFloat(document.getElementById('initialCapital').value) || 1000;
+      const pipValue = 1; // Simplified: 1 pip = $1 per 1 lot
 
-      const fastPeriod = parseInt(document.getElementById('fastMA').value);
-      const slowPeriod = parseInt(document.getElementById('slowMA').value);
-      const tp = parseInt(document.getElementById('tp').value);
-      const sl = parseInt(document.getElementById('sl').value);
-      let capital = parseFloat(document.getElementById('capital').value);
-      const lotSize = parseFloat(document.getElementById('lotSize').value);
+      const shortMA = 5;
+      const longMA = 10;
 
-      const reader = new FileReader();
-      reader.onload = e => {
-        const data = parseCSV(e.target.result);
-        const closes = data.map(d => d.Close);
-        const fastMA = calcMA(data, fastPeriod, 'Close');
-        const slowMA = calcMA(data, slowPeriod, 'Close');
+      const tableBody = document.querySelector("#tradeLog tbody");
+      tableBody.innerHTML = "";
 
-        let trades = [];
-        let position = null;
+      for (let i = longMA; i < csvData.length - 1; i++) {
+        const prevShort = SMA(csvData, i - 1, shortMA);
+        const prevLong = SMA(csvData, i - 1, longMA);
+        const currentShort = SMA(csvData, i, shortMA);
+        const currentLong = SMA(csvData, i, longMA);
 
-        for (let i = 1; i < data.length; i++) {
-          const prevFast = fastMA[i - 1];
-          const prevSlow = slowMA[i - 1];
-          const currFast = fastMA[i];
-          const currSlow = slowMA[i];
-          if (prevFast === null || prevSlow === null || currFast === null || currSlow === null) continue;
+        if (prevShort && prevLong && currentShort && currentLong) {
+          let signal = null;
+          if (prevShort < prevLong && currentShort > currentLong) signal = "Buy";
+          if (prevShort > prevLong && currentShort < currentLong) signal = "Sell";
 
-          const entry = data[i].Close;
-          const timestamp = data[i].Time;
+          if (signal) {
+            const entry = csvData[i + 1].open;
+            let exit = entry;
+            let pips = 0;
+            let hitTP = false;
 
-          if (!position) {
-            if (prevFast < prevSlow && currFast > currSlow) {
-              position = { type: 'Buy', entry, timestamp };
-            } else if (prevFast > prevSlow && currFast < currSlow) {
-              position = { type: 'Sell', entry, timestamp };
-            }
-          } else {
-            let exit = null, profit = 0;
-            if (position.type === 'Buy') {
-              if (data[i].High >= position.entry + tp) {
-                exit = position.entry + tp;
-                profit = tp * lotSize;
-              } else if (data[i].Low <= position.entry - sl) {
-                exit = position.entry - sl;
-                profit = -sl * lotSize;
+            for (let j = i + 1; j < csvData.length; j++) {
+              const high = csvData[j].high;
+              const low = csvData[j].low;
+
+              if (signal === "Buy") {
+                if (high >= entry + tp * 0.0001) {
+                  exit = entry + tp * 0.0001;
+                  pips = tp;
+                  hitTP = true;
+                  break;
+                } else if (low <= entry - sl * 0.0001) {
+                  exit = entry - sl * 0.0001;
+                  pips = -sl;
+                  break;
+                }
               }
-            } else {
-              if (data[i].Low <= position.entry - tp) {
-                exit = position.entry - tp;
-                profit = tp * lotSize;
-              } else if (data[i].High >= position.entry + sl) {
-                exit = position.entry + sl;
-                profit = -sl * lotSize;
+
+              if (signal === "Sell") {
+                if (low <= entry - tp * 0.0001) {
+                  exit = entry - tp * 0.0001;
+                  pips = tp;
+                  hitTP = true;
+                  break;
+                } else if (high >= entry + sl * 0.0001) {
+                  exit = entry + sl * 0.0001;
+                  pips = -sl;
+                  break;
+                }
               }
             }
-            if (exit !== null) {
-              capital += profit;
-              trades.push({
-                ...position,
-                exit,
-                exitTime: timestamp,
-                profit,
-                capital: capital.toFixed(2)
-              });
-              position = null;
-            }
+
+            const profit = lotSize * pips * pipValue;
+            capital += profit;
+
+            const row = document.createElement("tr");
+            row.innerHTML = `
+              <td>${i}</td>
+              <td>${signal}</td>
+              <td>${entry.toFixed(5)}</td>
+              <td>${exit.toFixed(5)}</td>
+              <td>${pips}</td>
+              <td>${profit.toFixed(2)}</td>
+              <td>${capital.toFixed(2)}</td>
+            `;
+            tableBody.appendChild(row);
           }
         }
-
-        document.getElementById('results').innerHTML = `
-          <h3>Final Capital: $${capital.toFixed(2)}</h3>
-          <table>
-            <thead>
-              <tr><th>Type</th><th>Entry</th><th>Exit</th><th>Profit</th><th>Capital</th><th>Entry Time</th><th>Exit Time</th></tr>
-            </thead>
-            <tbody>
-              ${trades.map(t => `
-                <tr>
-                  <td>${t.type}</td>
-                  <td>${t.entry}</td>
-                  <td>${t.exit}</td>
-                  <td>${t.profit.toFixed(2)}</td>
-                  <td>${t.capital}</td>
-                  <td>${t.timestamp}</td>
-                  <td>${t.exitTime}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        `;
-      };
-      reader.readAsText(file);
+      }
     }
-  </script></body>
+  </script>
+</body>
 </html>
