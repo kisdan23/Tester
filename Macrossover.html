@@ -1,200 +1,1328 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MA Crossover Strategy Tester</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    input, button { margin: 5px; }
-    table, th, td { border: 1px solid black; border-collapse: collapse; padding: 5px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced MA Crossover Backtester</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .controls-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .control-group {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .control-group h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+        
+        .form-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .form-row label {
+            min-width: 120px;
+            font-weight: 500;
+        }
+        
+        .form-row input, .form-row select {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-row input:focus, .form-row select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .file-upload {
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            text-align: center;
+            background: #f8f9fa;
+        }
+        
+        .file-upload input[type="file"] {
+            margin-top: 10px;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .results-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .results-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .results-card h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .metric-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border-left: 4px solid #667eea;
+        }
+        
+        .metric-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .metric-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .chart-container {
+            margin-top: 20px;
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .trade-log {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+        }
+        
+        .trade-log table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        
+        .trade-log th {
+            background: #667eea;
+            color: white;
+            padding: 10px 8px;
+            text-align: left;
+            position: sticky;
+            top: 0;
+        }
+        
+        .trade-log td {
+            padding: 8px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .trade-log tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .profit {
+            color: #28a745;
+            font-weight: bold;
+        }
+        
+        .loss {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        @media (max-width: 768px) {
+            .results-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Enhanced MA Crossover Backtester</h1>
+            <p>Professional-grade backtesting with comprehensive risk management and ML-ready data export</p>
+        </div>
+        
+        <div class="controls-section">
+            <div class="file-upload">
+                <h3>📊 Upload Price Data</h3>
+                <p>Upload CSV file with columns: Date, Open, High, Low, Close, Volume</p>
+                <input type="file" id="csvFile" accept=".csv" />
+            </div>
+            
+            <div class="controls-grid">
+                <div class="control-group">
+                    <h3>📈 Strategy Parameters</h3>
+                    <div class="form-row">
+                        <label>Short SMA:</label>
+                        <input type="number" id="shortMA" value="10" min="1">
+                    </div>
+                    <div class="form-row">
+                        <label>Long SMA:</label>
+                        <input type="number" id="longMA" value="20" min="1">
+                    </div>
+                    <div class="form-row">
+                        <label>RSI Period:</label>
+                        <input type="number" id="rsiPeriod" value="14" min="1">
+                    </div>
+                    <div class="form-row">
+                        <label>MACD Fast:</label>
+                        <input type="number" id="macdFast" value="12" min="1">
+                    </div>
+                    <div class="form-row">
+                        <label>MACD Slow:</label>
+                        <input type="number" id="macdSlow" value="26" min="1">
+                    </div>
+                    <div class="form-row">
+                        <label>MACD Signal:</label>
+                        <input type="number" id="macdSignal" value="9" min="1">
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>💰 Position & Capital</h3>
+                    <div class="form-row">
+                        <label>Initial Capital:</label>
+                        <input type="number" id="initialCapital" value="10000" min="100">
+                    </div>
+                    <div class="form-row">
+                        <label>Position Size:</label>
+                        <select id="positionSizeType">
+                            <option value="fixed">Fixed Amount</option>
+                            <option value="percent">% of Capital</option>
+                            <option value="risk">Risk-Based</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label>Size Value:</label>
+                        <input type="number" id="positionSize" value="1000" min="0.01" step="0.01">
+                    </div>
+                    <div class="form-row">
+                        <label>Max Risk/Trade (%):</label>
+                        <input type="number" id="maxRiskPerTrade" value="2" min="0.1" max="10" step="0.1">
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>🛡️ Risk Management</h3>
+                    <div class="form-row">
+                        <label>Stop Loss (%):</label>
+                        <input type="number" id="stopLoss" value="2" min="0" step="0.1">
+                    </div>
+                    <div class="form-row">
+                        <label>Take Profit (%):</label>
+                        <input type="number" id="takeProfit" value="4" min="0" step="0.1">
+                    </div>
+                    <div class="form-row">
+                        <label>Trailing Stop:</label>
+                        <select id="trailingStop">
+                            <option value="none">None</option>
+                            <option value="fixed">Fixed %</option>
+                            <option value="atr">ATR-based</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label>Trailing Value:</label>
+                        <input type="number" id="trailingValue" value="1" min="0" step="0.1">
+                    </div>
+                    <div class="form-row">
+                        <label>Max Drawdown (%):</label>
+                        <input type="number" id="maxDrawdown" value="15" min="1" max="50">
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>⚙️ Advanced Settings</h3>
+                    <div class="form-row">
+                        <label>Commission (%):</label>
+                        <input type="number" id="commission" value="0.1" min="0" step="0.01">
+                    </div>
+                    <div class="form-row">
+                        <label>Slippage (%):</label>
+                        <input type="number" id="slippage" value="0.05" min="0" step="0.01">
+                    </div>
+                    <div class="form-row">
+                        <label>Max Consecutive Losses:</label>
+                        <input type="number" id="maxConsecutiveLosses" value="5" min="1">
+                    </div>
+                    <div class="form-row">
+                        <label>Min Trade Interval:</label>
+                        <input type="number" id="minTradeInterval" value="1" min="1">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="buttons">
+                <button class="btn btn-primary" onclick="runBacktest()">🚀 Run Backtest</button>
+                <button class="btn btn-secondary" onclick="exportResults()">📊 Export ML Data</button>
+                <button class="btn btn-secondary" onclick="generateSampleData()">🎲 Use Sample Data</button>
+            </div>
+        </div>
+        
+        <div id="status"></div>
+        
+        <div class="results-section">
+            <div class="results-card">
+                <h3>📊 Performance Metrics</h3>
+                <div class="metrics-grid" id="metricsGrid">
+                    <!-- Metrics will be populated here -->
+                </div>
+            </div>
+            
+            <div class="results-card">
+                <h3>📋 Trade Log</h3>
+                <div class="trade-log" id="tradeLog">
+                    <!-- Trade log will be populated here -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <canvas id="priceChart"></canvas>
+        </div>
+    </div>
 
-  <h2>MA Crossover Backtester</h2>
-
-  <input type="file" id="csvFile" accept=".csv"><br>
-
-  <label>Short MA:</label>
-  <input type="number" id="shortMA" value="5">
-
-  <label>Long MA:</label>
-  <input type="number" id="longMA" value="10"><br>
-
-  <label>Lot Size:</label>
-  <input type="number" id="lotSize" value="0.1" step="0.01">
-
-  <label>Initial Capital:</label>
-  <input type="number" id="initialCapital" value="1000"><br>
-
-  <label>Take Profit (pips):</label>
-  <input type="number" id="tp" value="50">
-
-  <label>Stop Loss (pips):</label>
-  <input type="number" id="sl" value="30"><br>
-
-  <button onclick="runStrategy()">Run Strategy</button>
-
-  <h3>Trade Log</h3>
-  <table id="tradeLog">
-    <thead>
-      <tr>
-        <th>Index</th>
-        <th>Signal</th>
-        <th>Entry</th>
-        <th>Exit</th>
-        <th>Pips</th>
-        <th>Profit</th>
-        <th>Capital</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <h3>Chart</h3>
-  <canvas id="chart" width="900" height="400"></canvas>
-
-  <script>
-    let csvData = [];
-
-    document.getElementById('csvFile').addEventListener('change', function (e) {
-      const reader = new FileReader();
-      reader.onload = function () {
-        const lines = reader.result.split('\n').slice(1);
-        csvData = lines.map(line => {
-          const [time, open, high, low, close] = line.split(',');
-          return {
-            time,
-            open: parseFloat(open),
-            high: parseFloat(high),
-            low: parseFloat(low),
-            close: parseFloat(close)
-          };
-        }).filter(row => !isNaN(row.close));
-        alert("CSV loaded with " + csvData.length + " rows.");
-      };
-      reader.readAsText(e.target.files[0]);
-    });
-
-    function SMA(data, index, period) {
-      if (index < period - 1) return null;
-      let sum = 0;
-      for (let i = 0; i < period; i++) {
-        sum += data[index - i].close;
-      }
-      return sum / period;
-    }
-
-    function runStrategy() {
-      const shortMA = parseInt(document.getElementById('shortMA').value);
-      const longMA = parseInt(document.getElementById('longMA').value);
-      const tp = parseFloat(document.getElementById('tp').value);
-      const sl = parseFloat(document.getElementById('sl').value);
-      const lotSize = parseFloat(document.getElementById('lotSize').value) || 0.1;
-      let capital = parseFloat(document.getElementById('initialCapital').value) || 1000;
-      const pipValue = 1;
-
-      const tableBody = document.querySelector("#tradeLog tbody");
-      tableBody.innerHTML = "";
-
-      let chartLabels = [];
-      let closeData = [];
-      let shortMAData = [];
-      let longMAData = [];
-
-      for (let i = 0; i < csvData.length; i++) {
-        chartLabels.push(csvData[i].time);
-        closeData.push(csvData[i].close);
-        shortMAData.push(SMA(csvData, i, shortMA));
-        longMAData.push(SMA(csvData, i, longMA));
-      }
-
-      for (let i = longMA; i < csvData.length - 1; i++) {
-        const prevShort = shortMAData[i - 1];
-        const prevLong = longMAData[i - 1];
-        const currentShort = shortMAData[i];
-        const currentLong = longMAData[i];
-
-        if (prevShort && prevLong && currentShort && currentLong) {
-          let signal = null;
-          if (prevShort < prevLong && currentShort > currentLong) signal = "Buy";
-          if (prevShort > prevLong && currentShort < currentLong) signal = "Sell";
-
-          if (signal) {
-            const entry = csvData[i + 1].open;
-            let exit = entry;
-            let pips = 0;
-
-            for (let j = i + 1; j < csvData.length; j++) {
-              const high = csvData[j].high;
-              const low = csvData[j].low;
-
-              if (signal === "Buy") {
-                if (high >= entry + tp * 0.0001) {
-                  exit = entry + tp * 0.0001;
-                  pips = tp;
-                  break;
-                } else if (low <= entry - sl * 0.0001) {
-                  exit = entry - sl * 0.0001;
-                  pips = -sl;
-                  break;
+    <script>
+        let priceData = [];
+        let backtestResults = null;
+        let chart = null;
+        
+        // Technical indicator calculations
+        function calculateSMA(data, period) {
+            const sma = [];
+            for (let i = 0; i < data.length; i++) {
+                if (i < period - 1) {
+                    sma.push(null);
+                } else {
+                    const sum = data.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0);
+                    sma.push(sum / period);
                 }
-              }
-
-              if (signal === "Sell") {
-                if (low <= entry - tp * 0.0001) {
-                  exit = entry - tp * 0.0001;
-                  pips = tp;
-                  break;
-                } else if (high >= entry + sl * 0.0001) {
-                  exit = entry + sl * 0.0001;
-                  pips = -sl;
-                  break;
-                }
-              }
             }
-
-            const profit = lotSize * pips * pipValue;
-            capital += profit;
-
-            const row = document.createElement("tr");
-            row.innerHTML = `
-              <td>${i}</td>
-              <td>${signal}</td>
-              <td>${entry.toFixed(5)}</td>
-              <td>${exit.toFixed(5)}</td>
-              <td>${pips}</td>
-              <td>${profit.toFixed(2)}</td>
-              <td>${capital.toFixed(2)}</td>
+            return sma;
+        }
+        
+        function calculateRSI(closes, period = 14) {
+            const rsi = [];
+            const gains = [];
+            const losses = [];
+            
+            for (let i = 1; i < closes.length; i++) {
+                const change = closes[i] - closes[i - 1];
+                gains.push(Math.max(change, 0));
+                losses.push(Math.max(-change, 0));
+            }
+            
+            for (let i = 0; i < closes.length; i++) {
+                if (i < period) {
+                    rsi.push(null);
+                } else if (i === period) {
+                    const avgGain = gains.slice(0, period).reduce((a, b) => a + b, 0) / period;
+                    const avgLoss = losses.slice(0, period).reduce((a, b) => a + b, 0) / period;
+                    const rs = avgGain / (avgLoss || 0.0001);
+                    rsi.push(100 - (100 / (1 + rs)));
+                } else {
+                    const prevAvgGain = (rsi[i - 1] !== null) ? 
+                        ((gains[i - period - 1] * (period - 1)) + gains[i - 2]) / period : 0;
+                    const prevAvgLoss = (rsi[i - 1] !== null) ? 
+                        ((losses[i - period - 1] * (period - 1)) + losses[i - 2]) / period : 0;
+                    const rs = prevAvgGain / (prevAvgLoss || 0.0001);
+                    rsi.push(100 - (100 / (1 + rs)));
+                }
+            }
+            
+            return rsi;
+        }
+        
+        function calculateMACD(closes, fastPeriod = 12, slowPeriod = 26, signalPeriod = 9) {
+            const fastEMA = calculateEMA(closes, fastPeriod);
+            const slowEMA = calculateEMA(closes, slowPeriod);
+            const macdLine = [];
+            
+            for (let i = 0; i < closes.length; i++) {
+                if (fastEMA[i] !== null && slowEMA[i] !== null) {
+                    macdLine.push(fastEMA[i] - slowEMA[i]);
+                } else {
+                    macdLine.push(null);
+                }
+            }
+            
+            const signalLine = calculateEMA(macdLine.filter(v => v !== null), signalPeriod);
+            const histogram = [];
+            
+            for (let i = 0; i < macdLine.length; i++) {
+                if (macdLine[i] !== null && signalLine[i - (slowPeriod - 1)] !== null) {
+                    histogram.push(macdLine[i] - signalLine[i - (slowPeriod - 1)]);
+                } else {
+                    histogram.push(null);
+                }
+            }
+            
+            return { macd: macdLine, signal: signalLine, histogram };
+        }
+        
+        function calculateEMA(data, period) {
+            const ema = [];
+            const k = 2 / (period + 1);
+            
+            let sum = 0;
+            let count = 0;
+            
+            for (let i = 0; i < data.length; i++) {
+                if (data[i] !== null) {
+                    if (count < period) {
+                        sum += data[i];
+                        count++;
+                        if (count === period) {
+                            ema.push(sum / period);
+                        } else {
+                            ema.push(null);
+                        }
+                    } else {
+                        ema.push(data[i] * k + ema[i - 1] * (1 - k));
+                    }
+                } else {
+                    ema.push(null);
+                }
+            }
+            
+            return ema;
+        }
+        
+        function calculateATR(data, period = 14) {
+            const tr = [];
+            const atr = [];
+            
+            for (let i = 1; i < data.length; i++) {
+                const high = data[i].high;
+                const low = data[i].low;
+                const prevClose = data[i - 1].close;
+                
+                const trueRange = Math.max(
+                    high - low,
+                    Math.abs(high - prevClose),
+                    Math.abs(low - prevClose)
+                );
+                tr.push(trueRange);
+            }
+            
+            for (let i = 0; i < data.length; i++) {
+                if (i < period) {
+                    atr.push(null);
+                } else if (i === period) {
+                    atr.push(tr.slice(0, period).reduce((a, b) => a + b, 0) / period);
+                } else {
+                    atr.push((atr[i - 1] * (period - 1) + tr[i - 1]) / period);
+                }
+            }
+            
+            return atr;
+        }
+        
+        // File handling
+        document.getElementById('csvFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                Papa.parse(file, {
+                    header: true,
+                    dynamicTyping: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        try {
+                            priceData = results.data.map(row => ({
+                                date: new Date(row.Date || row.date),
+                                open: parseFloat(row.Open || row.open),
+                                high: parseFloat(row.High || row.high),
+                                low: parseFloat(row.Low || row.low),
+                                close: parseFloat(row.Close || row.close),
+                                volume: parseFloat(row.Volume || row.volume || 0)
+                            })).filter(row => !isNaN(row.close));
+                            
+                            showStatus(`Data loaded: ${priceData.length} rows`, 'success');
+                        } catch (error) {
+                            showStatus(`Error parsing CSV: ${error.message}`, 'error');
+                        }
+                    }
+                });
+            }
+        });
+        
+        function generateSampleData() {
+            const startDate = new Date('2023-01-01');
+            priceData = [];
+            let price = 100;
+            
+            for (let i = 0; i < 252; i++) {
+                const date = new Date(startDate);
+                date.setDate(date.getDate() + i);
+                
+                const change = (Math.random() - 0.5) * 0.04;
+                const trend = Math.sin(i / 20) * 0.002;
+                price *= (1 + change + trend);
+                
+                const high = price * (1 + Math.random() * 0.02);
+                const low = price * (1 - Math.random() * 0.02);
+                const open = price * (0.98 + Math.random() * 0.04);
+                
+                priceData.push({
+                    date: date,
+                    open: open,
+                    high: Math.max(high, open, price),
+                    low: Math.min(low, open, price),
+                    close: price,
+                    volume: Math.floor(1000000 + Math.random() * 500000)
+                });
+            }
+            
+            showStatus('Sample data generated (252 trading days)', 'success');
+        }
+        
+        function runBacktest() {
+            if (priceData.length === 0) {
+                showStatus('Please upload data or generate sample data first', 'error');
+                return;
+            }
+            
+            const params = getParameters();
+            showStatus('Running backtest...', 'success');
+            
+            setTimeout(() => {
+                backtestResults = performBacktest(priceData, params);
+                displayResults(backtestResults);
+                updateChart();
+                showStatus(`Backtest completed: ${backtestResults.trades.length} trades`, 'success');
+            }, 100);
+        }
+        
+        function getParameters() {
+            return {
+                shortMA: parseInt(document.getElementById('shortMA').value),
+                longMA: parseInt(document.getElementById('longMA').value),
+                rsiPeriod: parseInt(document.getElementById('rsiPeriod').value),
+                macdFast: parseInt(document.getElementById('macdFast').value),
+                macdSlow: parseInt(document.getElementById('macdSlow').value),
+                macdSignal: parseInt(document.getElementById('macdSignal').value),
+                initialCapital: parseFloat(document.getElementById('initialCapital').value),
+                positionSizeType: document.getElementById('positionSizeType').value,
+                positionSize: parseFloat(document.getElementById('positionSize').value),
+                maxRiskPerTrade: parseFloat(document.getElementById('maxRiskPerTrade').value),
+                stopLoss: parseFloat(document.getElementById('stopLoss').value),
+                takeProfit: parseFloat(document.getElementById('takeProfit').value),
+                trailingStop: document.getElementById('trailingStop').value,
+                trailingValue: parseFloat(document.getElementById('trailingValue').value),
+                maxDrawdown: parseFloat(document.getElementById('maxDrawdown').value),
+                commission: parseFloat(document.getElementById('commission').value),
+                slippage: parseFloat(document.getElementById('slippage').value),
+                maxConsecutiveLosses: parseInt(document.getElementById('maxConsecutiveLosses').value),
+                minTradeInterval: parseInt(document.getElementById('minTradeInterval').value)
+            };
+        }
+        
+        function performBacktest(data, params) {
+            const closes = data.map(d => d.close);
+            const highs = data.map(d => d.high);
+            const lows = data.map(d => d.low);
+            
+            // Calculate indicators
+            const shortMA = calculateSMA(closes, params.shortMA);
+            const longMA = calculateSMA(closes, params.longMA);
+            const rsi = calculateRSI(closes, params.rsiPeriod);
+            const macd = calculateMACD(closes, params.macdFast, params.macdSlow, params.macdSignal);
+            const atr = calculateATR(data, 14);
+            
+            let capital = params.initialCapital;
+            let position = null;
+            let trades = [];
+            let equity = [capital];
+            let maxCapital = capital;
+            let consecutiveLosses = 0;
+            let lastTradeIndex = -params.minTradeInterval;
+            
+            for (let i = Math.max(params.longMA, params.rsiPeriod, params.macdSlow + params.macdSignal); i < data.length; i++) {
+                const currentPrice = closes[i];
+                const currentHigh = highs[i];
+                const currentLow = lows[i];
+                
+                // Update equity
+                if (position) {
+                    const unrealizedPnL = (currentPrice - position.entryPrice) * position.shares * (position.type === 'long' ? 1 : -1);
+                    equity.push(capital + unrealizedPnL);
+                } else {
+                    equity.push(capital);
+                }
+                
+                // Check for exit conditions
+                if (position) {
+                    let exitPrice = null;
+                    let exitReason = '';
+                    
+                    const pnlPercent = ((currentPrice - position.entryPrice) / position.entryPrice) * 100 * (position.type === 'long' ? 1 : -1);
+                    
+                    // Stop loss check
+                    if (params.stopLoss > 0 && pnlPercent <= -params.stopLoss) {
+                        exitPrice = currentPrice;
+                        exitReason = 'Stop Loss';
+                    }
+                    
+                    // Take profit check
+                    if (!exitPrice && params.takeProfit > 0 && pnlPercent >= params.takeProfit) {
+                        exitPrice = currentPrice;
+                        exitReason = 'Take Profit';
+                    }
+                    
+                    // Trailing stop check
+                    if (!exitPrice && params.trailingStop !== 'none') {
+                        let trailValue = params.trailingValue;
+                        if (params.trailingStop === 'atr' && atr[i]) {
+                            trailValue = (atr[i] / currentPrice) * 100;
+                        }
+                        
+                        if (position.type === 'long') {
+                            const trailStop = position.highestPrice * (1 - trailValue / 100);
+                            if (currentLow <= trailStop) {
+                                exitPrice = Math.max(trailStop, currentLow);
+                                exitReason = 'Trailing Stop';
+                            }
+                            position.highestPrice = Math.max(position.highestPrice, currentHigh);
+                        }
+                    }
+                    
+                    // Signal reversal exit
+                    const prevShortMA = shortMA[i - 1];
+                    const prevLongMA = longMA[i - 1];
+                    const currentShortMA = shortMA[i];
+                    const currentLongMA = longMA[i];
+                    
+                    if (position.type === 'long' && prevShortMA > prevLongMA && currentShortMA < currentLongMA) {
+                        exitPrice = currentPrice;
+                        exitReason = 'Signal Exit';
+                    } else if (position.type === 'short' && prevShortMA < prevLongMA && currentShortMA > currentLongMA) {
+                        exitPrice = currentPrice;
+                        exitReason = 'Signal Exit';
+                    }
+                    
+                    // Execute exit
+                    if (exitPrice) {
+                        const pnl = (exitPrice - position.entryPrice) * position.shares * (position.type === 'long' ? 1 : -1);
+                        const commission = (position.entryPrice * position.shares + exitPrice * position.shares) * (params.commission / 100);
+                        const netPnl = pnl - commission;
+                        
+                        capital += netPnl;
+                        
+                        const trade = {
+                            ...position,
+                            exitIndex: i,
+                            exitDate: data[i].date,
+                            exitPrice: exitPrice,
+                            exitReason: exitReason,
+                            pnl: pnl,
+                            netPnl: netPnl,
+                            commission: commission,
+                            returnPercent: (netPnl / (position.entryPrice * position.shares)) * 100,
+                            capitalAfter: capital,
+                            holdingPeriod: i - position.entryIndex,
+                            mae: position.mae,
+                            mfe: position.mfe,
+                            exitRSI: rsi[i],
+                            exitMACD: macd.macd[i],
+                            exitMACDSignal: macd.signal[i - (params.macdSlow - 1)] || null,
+                            atrAtExit: atr[i]
+                        };
+                        
+                        trades.push(trade);
+                        
+                        // Update consecutive losses
+                        if (netPnl < 0) {
+                            consecutiveLosses++;
+                        } else {
+                            consecutiveLosses = 0;
+                        }
+                        
+                        position = null;
+                        lastTradeIndex = i;
+                    } else if (position) {
+                        // Update MAE/MFE
+                        const unrealizedPnL = (currentPrice - position.entryPrice) * position.shares * (position.type === 'long' ? 1 : -1);
+                        position.mae = Math.min(position.mae, unrealizedPnL);
+                        position.mfe = Math.max(position.mfe, unrealizedPnL);
+                    }
+                }
+                
+                // Check for entry conditions
+                if (!position && i > lastTradeIndex + params.minTradeInterval && consecutiveLosses < params.maxConsecutiveLosses) {
+                    // Check drawdown limit
+                    const currentDrawdown = ((maxCapital - capital) / maxCapital) * 100;
+                    if (currentDrawdown >= params.maxDrawdown) {
+                        continue;
+                    }
+                    
+                    const prevShortMA = shortMA[i - 1];
+                    const prevLongMA = longMA[i - 1];
+                    const currentShortMA = shortMA[i];
+                    const currentLongMA = longMA[i];
+                    
+                    let signal = null;
+                    
+                    // Long signal
+                    if (prevShortMA <= prevLongMA && currentShortMA > currentLongMA) {
+                        signal = 'long';
+                    }
+                    // Short signal
+                    else if (prevShortMA >= prevLongMA && currentShortMA < currentLongMA) {
+                        signal = 'short';
+                    }
+                    
+                    if (signal) {
+                        // Calculate position size
+                        let positionValue;
+                        
+                        switch (params.positionSizeType) {
+                            case 'fixed':
+                                positionValue = params.positionSize;
+                                break;
+                            case 'percent':
+                                positionValue = capital * (params.positionSize / 100);
+                                break;
+                            case 'risk':
+                                const riskAmount = capital * (params.maxRiskPerTrade / 100);
+                                const stopDistance = params.stopLoss / 100;
+                                positionValue = riskAmount / stopDistance;
+                                break;
+                        }
+                        
+                        const shares = Math.floor(positionValue / currentPrice);
+                        const actualPositionValue = shares * currentPrice;
+                        
+                        if (shares > 0 && actualPositionValue <= capital * 0.95) {
+                            // Apply slippage
+                            const slippageAmount = currentPrice * (params.slippage / 100);
+                            const entryPrice = signal === 'long' ? 
+                                currentPrice + slippageAmount : 
+                                currentPrice - slippageAmount;
+                            
+                            position = {
+                                entryIndex: i,
+                                entryDate: data[i].date,
+                                entryPrice: entryPrice,
+                                shares: shares,
+                                type: signal,
+                                capitalBefore: capital,
+                                entryRSI: rsi[i],
+                                entryMACD: macd.macd[i],
+                                entryMACDSignal: macd.signal[i - (params.macdSlow - 1)] || null,
+                                entryMACDHistogram: macd.histogram[i],
+                                atrAtEntry: atr[i],
+                                volatility: atr[i] ? (atr[i] / currentPrice) * 100 : null,
+                                mae: 0,
+                                mfe: 0,
+                                highestPrice: signal === 'long' ? currentPrice : 0,
+                                lowestPrice: signal === 'short' ? currentPrice : Infinity
+                            };
+                        }
+                    }
+                }
+                
+                // Update max capital
+                maxCapital = Math.max(maxCapital, capital);
+            }
+            
+            // Close any remaining position
+            if (position) {
+                const exitPrice = closes[closes.length - 1];
+                const pnl = (exitPrice - position.entryPrice) * position.shares * (position.type === 'long' ? 1 : -1);
+                const commission = (position.entryPrice * position.shares + exitPrice * position.shares) * (params.commission / 100);
+                const netPnl = pnl - commission;
+                
+                capital += netPnl;
+                
+                trades.push({
+                    ...position,
+                    exitIndex: data.length - 1,
+                    exitDate: data[data.length - 1].date,
+                    exitPrice: exitPrice,
+                    exitReason: 'End of Data',
+                    pnl: pnl,
+                    netPnl: netPnl,
+                    commission: commission,
+                    returnPercent: (netPnl / (position.entryPrice * position.shares)) * 100,
+                    capitalAfter: capital,
+                    holdingPeriod: data.length - 1 - position.entryIndex,
+                    mae: position.mae,
+                    mfe: position.mfe,
+                    exitRSI: rsi[data.length - 1],
+                    exitMACD: macd.macd[data.length - 1],
+                    exitMACDSignal: macd.signal[data.length - 1 - (params.macdSlow - 1)] || null,
+                    atrAtExit: atr[data.length - 1]
+                });
+            }
+            
+            // Calculate performance metrics
+            const metrics = calculateMetrics(trades, params.initialCapital, capital, equity);
+            
+            return {
+                trades,
+                metrics,
+                equity,
+                indicators: {
+                    shortMA,
+                    longMA,
+                    rsi,
+                    macd,
+                    atr
+                },
+                finalCapital: capital
+            };
+        }
+        
+        function calculateMetrics(trades, initialCapital, finalCapital, equity) {
+            if (trades.length === 0) {
+                return {
+                    totalTrades: 0,
+                    winRate: 0,
+                    totalReturn: 0,
+                    annualizedReturn: 0,
+                    maxDrawdown: 0,
+                    sharpeRatio: 0,
+                    profitFactor: 0,
+                    avgWin: 0,
+                    avgLoss: 0,
+                    maxConsecutiveWins: 0,
+                    maxConsecutiveLosses: 0,
+                    avgHoldingPeriod: 0,
+                    recoveryFactor: 0,
+                    calmarRatio: 0
+                };
+            }
+            
+            const winners = trades.filter(t => t.netPnl > 0);
+            const losers = trades.filter(t => t.netPnl < 0);
+            
+            const totalPnl = trades.reduce((sum, t) => sum + t.netPnl, 0);
+            const totalReturn = (totalPnl / initialCapital) * 100;
+            
+            // Calculate drawdown
+            let maxEquity = initialCapital;
+            let maxDrawdown = 0;
+            
+            for (let i = 0; i < equity.length; i++) {
+                maxEquity = Math.max(maxEquity, equity[i]);
+                const drawdown = ((maxEquity - equity[i]) / maxEquity) * 100;
+                maxDrawdown = Math.max(maxDrawdown, drawdown);
+            }
+            
+            // Calculate returns for Sharpe ratio
+            const returns = [];
+            for (let i = 1; i < equity.length; i++) {
+                returns.push((equity[i] - equity[i - 1]) / equity[i - 1]);
+            }
+            
+            const avgReturn = returns.reduce((sum, r) => sum + r, 0) / returns.length;
+            const returnStdDev = Math.sqrt(returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / returns.length);
+            const sharpeRatio = returnStdDev !== 0 ? (avgReturn / returnStdDev) * Math.sqrt(252) : 0;
+            
+            // Consecutive wins/losses
+            let consecutiveWins = 0;
+            let consecutiveLosses = 0;
+            let maxConsecutiveWins = 0;
+            let maxConsecutiveLosses = 0;
+            
+            for (const trade of trades) {
+                if (trade.netPnl > 0) {
+                    consecutiveWins++;
+                    consecutiveLosses = 0;
+                    maxConsecutiveWins = Math.max(maxConsecutiveWins, consecutiveWins);
+                } else {
+                    consecutiveLosses++;
+                    consecutiveWins = 0;
+                    maxConsecutiveLosses = Math.max(maxConsecutiveLosses, consecutiveLosses);
+                }
+            }
+            
+            const winRate = (winners.length / trades.length) * 100;
+            const avgWin = winners.length > 0 ? winners.reduce((sum, t) => sum + t.netPnl, 0) / winners.length : 0;
+            const avgLoss = losers.length > 0 ? losers.reduce((sum, t) => sum + t.netPnl, 0) / losers.length : 0;
+            const profitFactor = Math.abs(avgLoss) > 0 ? (avgWin * winners.length) / (Math.abs(avgLoss) * losers.length) : 0;
+            
+            const avgHoldingPeriod = trades.reduce((sum, t) => sum + t.holdingPeriod, 0) / trades.length;
+            const recoveryFactor = maxDrawdown > 0 ? totalReturn / maxDrawdown : 0;
+            const calmarRatio = maxDrawdown > 0 ? totalReturn / maxDrawdown : 0;
+            
+            return {
+                totalTrades: trades.length,
+                winRate: winRate,
+                totalReturn: totalReturn,
+                annualizedReturn: totalReturn * (252 / trades.length),
+                maxDrawdown: maxDrawdown,
+                sharpeRatio: sharpeRatio,
+                profitFactor: profitFactor,
+                avgWin: avgWin,
+                avgLoss: avgLoss,
+                maxConsecutiveWins: maxConsecutiveWins,
+                maxConsecutiveLosses: maxConsecutiveLosses,
+                avgHoldingPeriod: avgHoldingPeriod,
+                recoveryFactor: recoveryFactor,
+                calmarRatio: calmarRatio,
+                winLossRatio: Math.abs(avgLoss) > 0 ? avgWin / Math.abs(avgLoss) : 0
+            };
+        }
+        
+        function displayResults(results) {
+            displayMetrics(results.metrics);
+            displayTradeLog(results.trades);
+        }
+        
+        function displayMetrics(metrics) {
+            const metricsGrid = document.getElementById('metricsGrid');
+            metricsGrid.innerHTML = '';
+            
+            const metricsList = [
+                { label: 'Total Trades', value: metrics.totalTrades, format: 'number' },
+                { label: 'Win Rate', value: metrics.winRate, format: 'percent' },
+                { label: 'Total Return', value: metrics.totalReturn, format: 'percent' },
+                { label: 'Max Drawdown', value: metrics.maxDrawdown, format: 'percent' },
+                { label: 'Sharpe Ratio', value: metrics.sharpeRatio, format: 'decimal' },
+                { label: 'Profit Factor', value: metrics.profitFactor, format: 'decimal' },
+                { label: 'Avg Win', value: metrics.avgWin, format: 'currency' },
+                { label: 'Avg Loss', value: metrics.avgLoss, format: 'currency' },
+                { label: 'Win/Loss Ratio', value: metrics.winLossRatio, format: 'decimal' },
+                { label: 'Max Consecutive Wins', value: metrics.maxConsecutiveWins, format: 'number' },
+                { label: 'Max Consecutive Losses', value: metrics.maxConsecutiveLosses, format: 'number' },
+                { label: 'Avg Holding Period', value: metrics.avgHoldingPeriod, format: 'decimal' }
+            ];
+            
+            metricsList.forEach(metric => {
+                const metricCard = document.createElement('div');
+                metricCard.className = 'metric-card';
+                
+                let formattedValue;
+                switch (metric.format) {
+                    case 'percent':
+                        formattedValue = `${metric.value.toFixed(2)}%`;
+                        break;
+                    case 'currency':
+                        formattedValue = `${metric.value.toFixed(2)}`;
+                        break;
+                    case 'decimal':
+                        formattedValue = metric.value.toFixed(2);
+                        break;
+                    case 'number':
+                        formattedValue = metric.value.toString();
+                        break;
+                }
+                
+                metricCard.innerHTML = `
+                    <div class="metric-value">${formattedValue}</div>
+                    <div class="metric-label">${metric.label}</div>
+                `;
+                
+                metricsGrid.appendChild(metricCard);
+            });
+        }
+        
+        function displayTradeLog(trades) {
+            const tradeLog = document.getElementById('tradeLog');
+            
+            if (trades.length === 0) {
+                tradeLog.innerHTML = '<p>No trades executed</p>';
+                return;
+            }
+            
+            let tableHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Type</th>
+                            <th>Entry Date</th>
+                            <th>Entry Price</th>
+                            <th>Entry RSI</th>
+                            <th>Entry MACD</th>
+                            <th>Exit Date</th>
+                            <th>Exit Price</th>
+                            <th>Exit RSI</th>
+                            <th>Exit Reason</th>
+                            <th>Hold Days</th>
+                            <th>P&L</th>
+                            <th>Return %</th>
+                            <th>MAE</th>
+                            <th>MFE</th>
+                            <th>Capital</th>
+                        </tr>
+                    </thead>
+                    <tbody>
             `;
-            tableBody.appendChild(row);
-          }
+            
+            trades.forEach((trade, index) => {
+                const pnlClass = trade.netPnl >= 0 ? 'profit' : 'loss';
+                const entryDate = trade.entryDate.toLocaleDateString();
+                const exitDate = trade.exitDate.toLocaleDateString();
+                
+                tableHTML += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${trade.type.toUpperCase()}</td>
+                        <td>${entryDate}</td>
+                        <td>${trade.entryPrice.toFixed(2)}</td>
+                        <td>${trade.entryRSI ? trade.entryRSI.toFixed(1) : 'N/A'}</td>
+                        <td>${trade.entryMACD ? trade.entryMACD.toFixed(3) : 'N/A'}</td>
+                        <td>${exitDate}</td>
+                        <td>${trade.exitPrice.toFixed(2)}</td>
+                        <td>${trade.exitRSI ? trade.exitRSI.toFixed(1) : 'N/A'}</td>
+                        <td>${trade.exitReason}</td>
+                        <td>${trade.holdingPeriod}</td>
+                        <td class="${pnlClass}">${trade.netPnl.toFixed(2)}</td>
+                        <td class="${pnlClass}">${trade.returnPercent.toFixed(2)}%</td>
+                        <td>${trade.mae.toFixed(2)}</td>
+                        <td>${trade.mfe.toFixed(2)}</td>
+                        <td>${trade.capitalAfter.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+            
+            tradeLog.innerHTML = tableHTML;
         }
-      }
-
-      const ctx = document.getElementById("chart").getContext("2d");
-      if (window.myChart) window.myChart.destroy();
-      window.myChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: chartLabels,
-          datasets: [
-            { label: "Close", data: closeData, borderColor: "black", fill: false },
-            { label: `MA ${shortMA}`, data: shortMAData, borderColor: "blue", fill: false },
-            { label: `MA ${longMA}`, data: longMAData, borderColor: "red", fill: false }
-          ]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            x: { display: false },
-            y: { beginAtZero: false }
-          }
+        
+        function updateChart() {
+            if (!backtestResults || priceData.length === 0) return;
+            
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            
+            if (chart) {
+                chart.destroy();
+            }
+            
+            const labels = priceData.map(d => d.date.toLocaleDateString());
+            const prices = priceData.map(d => d.close);
+            const shortMA = backtestResults.indicators.shortMA;
+            const longMA = backtestResults.indicators.longMA;
+            
+            // Mark trade entries and exits
+            const buyPoints = [];
+            const sellPoints = [];
+            
+            backtestResults.trades.forEach(trade => {
+                if (trade.type === 'long') {
+                    buyPoints.push({
+                        x: trade.entryIndex,
+                        y: trade.entryPrice
+                    });
+                    sellPoints.push({
+                        x: trade.exitIndex,
+                        y: trade.exitPrice
+                    });
+                }
+            });
+            
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Price',
+                            data: prices,
+                            borderColor: 'rgb(75, 192, 192)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                            borderWidth: 2,
+                            fill: false
+                        },
+                        {
+                            label: `Short SMA (${document.getElementById('shortMA').value})`,
+                            data: shortMA,
+                            borderColor: 'rgb(255, 99, 132)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                            borderWidth: 1,
+                            fill: false
+                        },
+                        {
+                            label: `Long SMA (${document.getElementById('longMA').value})`,
+                            data: longMA,
+                            borderColor: 'rgb(54, 162, 235)',
+                            backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                            borderWidth: 1,
+                            fill: false
+                        },
+                        {
+                            label: 'Buy Signals',
+                            data: buyPoints,
+                            borderColor: 'green',
+                            backgroundColor: 'green',
+                            pointRadius: 8,
+                            pointHoverRadius: 10,
+                            showLine: false,
+                            pointStyle: 'triangle'
+                        },
+                        {
+                            label: 'Sell Signals',
+                            data: sellPoints,
+                            borderColor: 'red',
+                            backgroundColor: 'red',
+                            pointRadius: 8,
+                            pointHoverRadius: 10,
+                            showLine: false,
+                            pointStyle: 'triangle',
+                            rotation: 180
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Price ($)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Price Chart with SMA Crossover Signals'
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
         }
-      });
-    }
-  </script>
+        
+        function exportResults() {
+            if (!backtestResults || backtestResults.trades.length === 0) {
+                showStatus('No backtest results to export', 'error');
+                return;
+            }
+            
+            // Prepare ML-ready dataset
+            const mlData = backtestResults.trades.map(trade => ({
+                // Entry conditions
+                entryPrice: trade.entryPrice,
+                entryRSI: trade.entryRSI,
+                entryMACD: trade.entryMACD,
+                entryMACDSignal: trade.entryMACDSignal,
+                entryMACDHistogram: trade.entryMACDHistogram,
+                atrAtEntry: trade.atrAtEntry,
+                volatility: trade.volatility,
+                
+                // Position details
+                positionType: trade.type,
+                shares: trade.shares,
+                capitalBefore: trade.capitalBefore,
+                
+                // Exit conditions
+                exitPrice: trade.exitPrice,
+                exitRSI: trade.exitRSI,
+                exitMACD: trade.exitMACD,
+                exitMACDSignal: trade.exitMACDSignal,
+                exitReason: trade.exitReason,
+                atrAtExit: trade.atrAtExit,
+                
+                // Performance metrics
+                holdingPeriod: trade.holdingPeriod,
+                pnl: trade.pnl,
+                netPnl: trade.netPnl,
+                returnPercent: trade.returnPercent,
+                mae: trade.mae,
+                mfe: trade.mfe,
+                commission: trade.commission,
+                
+                // Risk metrics
+                riskRewardRatio: trade.mfe / Math.abs(trade.mae),
+                maxAdverseExcursion: trade.mae,
+                maxFavorableExcursion: trade.mfe,
+                
+                // Binary outcome (for classification)
+                profitable: trade.netPnl > 0 ? 1 : 0,
+                
+                // Categorical features
+                entryDay: trade.entryDate.getDay(),
+                entryMonth: trade.entryDate.getMonth(),
+                exitDay: trade.exitDate.getDay(),
+                exitMonth: trade.exitDate.getMonth()
+            }));
+            
+            // Convert to CSV
+            const headers = Object.keys(mlData[0]);
+            const csvContent = [
+                headers.join(','),
+                ...mlData.map(row => headers.map(header => row[header]).join(','))
+            ].join('\n');
+            
+            // Download file
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `backtest_ml_data_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            showStatus(`Exported ${mlData.length} trade records for ML training`, 'success');
+        }
+        
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            
+            setTimeout(() => {
+                statusDiv.innerHTML = '';
+            }, 5000);
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            showStatus('Ready! Upload CSV data or generate sample data to begin.', 'success');
+        });
+    </script>
 </body>
 </html>
